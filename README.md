@@ -40,13 +40,13 @@ redis:5.0.7 //redis镜像名称和版本
 
 --port 6381 //redis.conf的配置：redis端口号
 
-## 启动容器
+### 启动容器
 docker start redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5 redis-node-6
 
-## 查看容器
+### 查看容器
 docker ps
 
-## 进入节点redis-node-1容器中
+### 进入节点redis-node-1容器中
 docker exec -it redis-node-1 /bin/bash
 
 参数create表示创建一个新的集群， --replicas 1 表示为每个master创建一个slave
@@ -149,3 +149,82 @@ ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386@16386 slave fe25154b7deb
 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383@16383 master - 0 1612431691302 3 connected 10923-16383
 d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385@16385 slave ff85d991c2a6af2283f8ffe0dfb5a036975fed63 0 1612431689268 5 connected
 ```
+### 客户端验证
+set user:100 agan
+
+set user:200 alex
+```
+127.0.0.1:6381>  set user:100 agan
+-> Redirected to slot [9308] located at 127.0.0.1:6382 #落到了地9308个槽号，节点是127.0.0.1:6382
+OK
+127.0.0.1:6382> set user:200 alex
+-> Redirected to slot [15628] located at 127.0.0.1:6383 #落到了地15628个槽号，节点是127.0.0.1:6383
+OK
+```
+
+### 查看集群信息
+redis-cli --cluster check 127.0.0.1:6381
+```
+127.0.0.1:6381 (ff85d991...) -> 0 keys | 5461 slots | 1 slaves.
+127.0.0.1:6382 (fe25154b...) -> 1 keys | 5462 slots | 1 slaves.
+127.0.0.1:6383 (96a9b20a...) -> 1 keys | 5461 slots | 1 slaves.
+[OK] 2 keys in 3 masters.
+0.00 keys per slot on average.
+>>> Performing Cluster Check (using node 127.0.0.1:6381)
+M: ff85d991c2a6af2283f8ffe0dfb5a036975fed63 127.0.0.1:6381
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+S: 90187399b90b6eb719e9adfbd46b1a94b4ec2429 127.0.0.1:6384
+   slots: (0 slots) slave
+   replicates 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1
+M: fe25154b7deb296fafba1afefa76d438e7deb4c0 127.0.0.1:6382
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+S: ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386
+   slots: (0 slots) slave
+   replicates fe25154b7deb296fafba1afefa76d438e7deb4c0
+M: 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383
+   slots:[10923-16383] (5461 slots) master
+   1 additional replica(s)
+S: d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385
+   slots: (0 slots) slave
+   replicates ff85d991c2a6af2283f8ffe0dfb5a036975fed63
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+```
+### 试验:主从切换
+cluster nodes
+```
+90187399b90b6eb719e9adfbd46b1a94b4ec2429 127.0.0.1:6384@16384 slave 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 0 1612432516236 4 connected
+ff85d991c2a6af2283f8ffe0dfb5a036975fed63 127.0.0.1:6381@16381 myself,master - 0 1612432514000 1 connected 0-5460
+fe25154b7deb296fafba1afefa76d438e7deb4c0 127.0.0.1:6382@16382 master - 0 1612432513000 2 connected 5461-10922
+ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386@16386 slave fe25154b7deb296fafba1afefa76d438e7deb4c0 0 1612432512000 6 connected
+96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383@16383 master - 0 1612432515229 3 connected 10923-16383
+d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385@16385 slave ff85d991c2a6af2283f8ffe0dfb5a036975fed63 0 1612432515000 5 connected
+```
+6381是主库，6384是从库,把6381停掉
+```
+a123506ff71e        redis:5.0.7           "docker-entrypoint.s…"   25 minutes ago      Up 25 minutes                                                                                                                                                               redis-node-6
+6631188196d5        redis:5.0.7           "docker-entrypoint.s…"   25 minutes ago      Up 25 minutes                                                                                                                                                               redis-node-5
+e999bc3e5934        redis:5.0.7           "docker-entrypoint.s…"   25 minutes ago      Up 25 minutes                                                                                                                                                               redis-node-4
+85d29c8a0f40        redis:5.0.7           "docker-entrypoint.s…"   27 minutes ago      Up 27 minutes                                                                                                                                                               redis-node-3
+6fb80a66c228        redis:5.0.7           "docker-entrypoint.s…"   27 minutes ago      Up 27 minutes                                                                                                                                                               redis-node-2
+edafcd8713df        redis:5.0.7           "docker-entrypoint.s…"   29 minutes ago      Up 29 minutes  
+```
+```
+docker stop redis-node-1
+redis-node-1
+```
+再次查看节点信息
+```
+cluster nodes
+fe25154b7deb296fafba1afefa76d438e7deb4c0 127.0.0.1:6382@16382 myself,master - 0 1612432977000 2 connected 5461-10922
+90187399b90b6eb719e9adfbd46b1a94b4ec2429 127.0.0.1:6384@16384 slave 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 0 1612432976977 4 connected
+ff85d991c2a6af2283f8ffe0dfb5a036975fed63 127.0.0.1:6381@16381 master,fail - 1612432708038 1612432706000 1 disconnected
+96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383@16383 master - 0 1612432975000 3 connected 10923-16383
+d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385@16385 master - 0 1612432977995 8 connected 0-5460
+ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386@16386 slave fe25154b7deb296fafba1afefa76d438e7deb4c0 0 1612432976000 6 connected
+```
+
