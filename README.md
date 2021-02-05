@@ -58,7 +58,7 @@ redis-cli --cluster create 127.0.0.1:6381  127.0.0.1:6382 127.0.0.1:6383 127.0.0
 
 docker inspect 44de1b0b5312(容器ID)查看容器自己的内部网络和ip地址
 
-docker run --name redis-node-4 -d -p 127.0.0.1:6384:6384 --net host --privileged=true -v /Users/Java/files/redis-node-4:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6384
+docker run --name redis-node-1 -d -p 127.0.0.1:6381:6381 --net host --privileged=true -v /Users/Java/files/redis-node-1:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6381
 docker run --name redis-node-5 -d -p 127.0.0.1:6385:6385 --net host --privileged=true -v /Users/Java/files/redis-node-5:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6385
 docker run --name redis-node-6 -d -p 127.0.0.1:6386:6386 --net host --privileged=true -v /Users/Java/files/redis-node-6:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6386
 ```
@@ -226,5 +226,127 @@ ff85d991c2a6af2283f8ffe0dfb5a036975fed63 127.0.0.1:6381@16381 master,fail - 1612
 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383@16383 master - 0 1612432975000 3 connected 10923-16383
 d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385@16385 master - 0 1612432977995 8 connected 0-5460
 ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386@16386 slave fe25154b7deb296fafba1afefa76d438e7deb4c0 0 1612432976000 6 connected
+```
+### redis集群扩容
+#### 步骤1：新增加两台redis节点
+docker create --name redis-node-7 --net host --privileged=true -v /Users/Java/files/redis-node-7:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6387
+
+docker create --name redis-node-8 --net host --privileged=true -v /Users/Java/files/redis-node-8:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6388
+
+启动容器
+
+docker run --name redis-node-7 -d -p 127.0.0.1:6387:6387 --net host --privileged=true -v /Users/Java/files/redis-node-7:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6387
+
+docker run --name redis-node-8 -d -p 127.0.0.1:6388:6388 --net host --privileged=true -v /Users/Java/files/redis-node-8:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6388
+
+进入节点redis-node-7容器中
+
+docker exec -it redis-node-7 /bin/bash 
+
+#### 步骤2：把新增的容器加入集群，添加master节点
+redis-cli --cluster add-node 127.0.0.1:6387 127.0.0.1:6381
+
+第一个节点代表新增的节点
+
+第二个节点代表原集群里面的任意节点
+```
+>>> Adding node 127.0.0.1:6387 to cluster 127.0.0.1:6381 #新增节点加入到了127.0.0.1:6381集群中
+>>> Performing Cluster Check (using node 127.0.0.1:6381) #先检查集群
+S: ff85d991c2a6af2283f8ffe0dfb5a036975fed63 127.0.0.1:6381
+   slots: (0 slots) slave
+   replicates d60e952ba67b14922cc747c6bab0375fba5c5a8e
+M: d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+M: fe25154b7deb296fafba1afefa76d438e7deb4c0 127.0.0.1:6382
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+S: ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386
+   slots: (0 slots) slave
+   replicates fe25154b7deb296fafba1afefa76d438e7deb4c0
+M: 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383
+   slots:[10923-16383] (5461 slots) master
+   1 additional replica(s)
+S: 90187399b90b6eb719e9adfbd46b1a94b4ec2429 127.0.0.1:6384
+   slots: (0 slots) slave
+   replicates 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+>>> Send CLUSTER MEET to node 127.0.0.1:6387 to make it join the cluster.
+[OK] New node added correctly.
+```
+#### 重新分配slot
+redis-cli --cluster reshard 127.0.0.1:6381
+
+新的节点加入集群，用redis-cli --cluster reshard ip:port命令来重新分配槽号
+
+ip:port指集群中任意一个节点就行，
+```
+Performing Cluster Check (using node 127.0.0.1:6381)
+S: ff85d991c2a6af2283f8ffe0dfb5a036975fed63 127.0.0.1:6381
+   slots: (0 slots) slave
+   replicates d60e952ba67b14922cc747c6bab0375fba5c5a8e
+M: d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+M: fe25154b7deb296fafba1afefa76d438e7deb4c0 127.0.0.1:6382
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+S: ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386
+   slots: (0 slots) slave
+   replicates fe25154b7deb296fafba1afefa76d438e7deb4c0
+M: 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383
+   slots:[10923-16383] (5461 slots) master
+   1 additional replica(s)
+M: 2312a968b79e2def698f711a65ed486d116aeea0 127.0.0.1:6387
+   slots: (0 slots) master
+S: 90187399b90b6eb719e9adfbd46b1a94b4ec2429 127.0.0.1:6384
+   slots: (0 slots) slave
+   replicates 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+How many slots do you want to move (from 1 to 16384)? 4096 #16394/master 台数
+What is the receiving node ID? 2312a968b79e2def698f711a65ed486d116aeea0
+Please enter all the source node IDs.
+  Type 'all' to use all the nodes as source nodes for the hash slots.
+  Type 'done' once you entered all the source nodes IDs.
+```
+redis-cli --cluster check 127.0.0.1:6378
+```
+127.0.0.1:6387 (2312a968...) -> 0 keys | 4096 slots | 0 slaves.
+127.0.0.1:6383 (96a9b20a...) -> 1 keys | 4096 slots | 1 slaves.
+127.0.0.1:6382 (fe25154b...) -> 1 keys | 4096 slots | 1 slaves.
+127.0.0.1:6385 (d60e952b...) -> 0 keys | 4096 slots | 1 slaves.
+[OK] 2 keys in 4 masters.
+0.00 keys per slot on average.
+>>> Performing Cluster Check (using node 127.0.0.1:6387)
+M: 2312a968b79e2def698f711a65ed486d116aeea0 127.0.0.1:6387
+   slots:[0-1364],[5461-6826],[10923-12287] (4096 slots) master  #为什么新加入的节点是3个区间，其他节点是单区间
+S: 90187399b90b6eb719e9adfbd46b1a94b4ec2429 127.0.0.1:6384  #因为对于新加入的节点要重新分配槽号成本太大，故采用了挪移的方式。从6381 6382 6383 旧节点挪移1364个槽号给新节点
+   slots: (0 slots) slave
+   replicates 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1
+S: ea598a0ffdd5fe4af99f41395ced879e66212bf2 127.0.0.1:6386
+   slots: (0 slots) slave
+   replicates fe25154b7deb296fafba1afefa76d438e7deb4c0
+M: 96a9b20acd29c43c1d3c20adf0dd36a9bc82c4c1 127.0.0.1:6383  #连续单区间
+   slots:[12288-16383] (4096 slots) master
+   1 additional replica(s)
+S: ff85d991c2a6af2283f8ffe0dfb5a036975fed63 127.0.0.1:6381
+   slots: (0 slots) slave
+   replicates d60e952ba67b14922cc747c6bab0375fba5c5a8e
+M: fe25154b7deb296fafba1afefa76d438e7deb4c0 127.0.0.1:6382
+   slots:[6827-10922] (4096 slots) master
+   1 additional replica(s)
+M: d60e952ba67b14922cc747c6bab0375fba5c5a8e 127.0.0.1:6385
+   slots:[1365-5460] (4096 slots) master
+   1 additional replica(s)
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
 ```
 
