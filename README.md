@@ -10,6 +10,9 @@ springBoot是伴随着Spring4.0诞生的，于2014年4月，发布了Spring Boot
 
 3.低效的开发效率和部署效率等问题
 
+## 指定redis.conf文件启动redis
+./src/redis-server /usr/local/redis-5.0.4/redis.conf
+
 ## docker搭建集群命令
 
 docker create --name redis-node-1 --net host --privileged=true -v /Users/Java/files/redis-node-1:/data redis:5.0.7 --cluster-enabled yes --appendonly yes --port 6381
