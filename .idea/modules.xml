@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/springboot-redis-cluster/demo.iml" filepath="$PROJECT_DIR$/springboot-redis-cluster/demo.iml" />
       <module fileurl="file://$PROJECT_DIR$/redis-string-mybatis/redis-string-mybatis.iml" filepath="$PROJECT_DIR$/redis-string-mybatis/redis-string-mybatis.iml" />
       <module fileurl="file://$PROJECT_DIR$/redis-string-springcache/redis-string-springcache.iml" filepath="$PROJECT_DIR$/redis-string-springcache/redis-string-springcache.iml" />
+      <module fileurl="file://$PROJECT_DIR$/redis-string-view/redis-string-view.iml" filepath="$PROJECT_DIR$/redis-string-view/redis-string-view.iml" />
       <module fileurl="file://$PROJECT_DIR$/ribbon-fallback/ribbon-fallback.iml" filepath="$PROJECT_DIR$/ribbon-fallback/ribbon-fallback.iml" />
     </modules>
   </component>

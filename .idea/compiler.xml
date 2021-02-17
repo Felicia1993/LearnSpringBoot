@@ -6,6 +6,8 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="redis-string-view" />
+        <module name="redis-string-springcache" />
         <module name="demo" />
         <module name="redis-string-mybatis" />
         <module name="ribbon-fallback" />
@@ -14,6 +16,8 @@
     <bytecodeTargetLevel>
       <module name="demo" target="1.8" />
       <module name="redis-string-mybatis" target="1.8" />
+      <module name="redis-string-springcache" target="8" />
+      <module name="redis-string-view" target="1.5" />
       <module name="ribbon-fallback" target="1.8" />
     </bytecodeTargetLevel>
   </component>

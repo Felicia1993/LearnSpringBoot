@@ -7,6 +7,7 @@
         <option value="$PROJECT_DIR$/redis-string-mybatis/pom.xml" />
         <option value="$PROJECT_DIR$/ribbon-fallback/pom.xml" />
         <option value="$PROJECT_DIR$/redis-string-springcache/pom.xml" />
+        <option value="$PROJECT_DIR$/redis-string-view/pom.xml" />
       </list>
     </option>
   </component>
