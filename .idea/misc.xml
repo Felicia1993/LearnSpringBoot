@@ -5,6 +5,8 @@
       <list>
         <option value="$PROJECT_DIR$/springboot-redis-cluster/pom.xml" />
         <option value="$PROJECT_DIR$/redis-string-mybatis/pom.xml" />
+        <option value="$PROJECT_DIR$/ribbon-fallback/pom.xml" />
+        <option value="$PROJECT_DIR$/redis-string-springcache/pom.xml" />
       </list>
     </option>
   </component>
